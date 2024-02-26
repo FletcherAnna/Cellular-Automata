@@ -10,7 +10,6 @@ import threading
 ###
 #TODO:
 #move array operations to grid object
-#move animation to separate thread
 #implement GUI controls
 #add file selector to save gif
 ###
@@ -19,8 +18,10 @@ import threading
 def main():
     
     root = tk.Tk()
-    root.geometry("900x900")
+    root.geometry("900x600")
+    root.resizable(False, False)
     app = Window(root)
+    
     tk.mainloop()
 
 def evolveGrid(x, rule, i):
@@ -49,8 +50,6 @@ def evolveGrid(x, rule, i):
     return x 
 
 
-
-
 def step(x, rule):
     """Perform a single step with rule.
     
@@ -71,31 +70,28 @@ def step(x, rule):
 
 
 
-
-
 class Window(Frame):
-
+    __allAni = []
+    
     def __init__(self, master = None):
         Frame.__init__(self, master)
         self.master = master
         self.init_window()
-
-
-    def Clear(self):
-        x=0
-
-    def Plot(self):
-        return 0
+        self._ani = animation
 
 
     def init_window(self):
+        
 
+        def animateThread(i):
+            threading.Thread(target=animate, args=(i,)).start()
+            
         def animate(i):
             
            self.grid = evolveGrid(self.grid, 169, i)
            self.image = self.ax.imshow(self.grid, interpolation='none', cmap=plt.cm.binary)
            return self.image
-            
+
         self.master.title("Cellular Automata")
         self.pack(fill='both', expand=1)     
 
@@ -112,43 +108,49 @@ class Window(Frame):
         
         self.textInitCon = Entry(self,width=12)
         self.textInitCon.grid(row=1,column=2)
+        
+        def Plot():
+            self.ani.pause()
+        
+        def Resume():
+            self.ani.resume()
+            
 
-
-        self.buttonPlot = Button(self,text="Plot",command=self.Plot,width=12)
-        self.buttonPlot = Button(self,text="Plot",width=12)
+        self.buttonPlot = Button(self,text="Start",command=Plot,width=12)
         self.buttonPlot.grid(row=2,column=1)
-        self.buttonClear = Button(self,text="Clear",command=self.Clear,width=12)
+        
+
+        self.buttonClear = Button(self,text="Resume",command=Resume,width=12)
         self.buttonClear.grid(row=2,column=2)
+
 
         self.buttonClear.bind(lambda e:self.Plot)
         
         self.buttonClear.bind(lambda e:self.Clear)
 
-        self.fig = plt.Figure()
+
         
-        #self.x = np.zeros((50, 50), dtype = np.int8)  #TODO: get initial array from User
-        steps = 50
-        size = 50
+        width = 10
         
-        self.grid = np.zeros((steps, size), dtype = np.int8)  
+
+        self.grid = np.zeros((width, width), dtype = np.int8)  
         
         #set random initial conditions
-        self.grid[0,:] = np.random.rand(size) < .5
+        self.grid[0,:] = np.random.rand(width) < .5
 
         #set up plot
-        self.ax = self.fig.add_subplot(111)
+        
+        self.fig = plt.Figure()
+        self.ax = self.fig.add_subplot(111)  
         self.ax.set_axis_off()
-
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=self)
         self.canvas.get_tk_widget().grid(column=0,row=4)
         
-        self.ani = animation.FuncAnimation(self.fig, animate, np.arange(0, 100), interval=100, blit=False, repeat = False)
+        self.ani = animation.FuncAnimation(self.fig, animateThread, np.arange(0, 200), interval=100, blit=False, repeat = False)
 
-class Grid():
-    
-    def __init__(self, size):
-        self.size = size
+
+
 
 
 if __name__ == "__main__":
